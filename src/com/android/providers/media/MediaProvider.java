@@ -60,6 +60,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.FileUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -5276,7 +5277,19 @@ public class MediaProvider extends ContentProvider {
             } else if (EXTERNAL_VOLUME.equals(volume)) {
                 if (Environment.isExternalStorageRemovable()) {
                     final StorageVolume actualVolume = mStorageManager.getPrimaryVolume();
-                    final int volumeId = actualVolume.getFatVolumeId();
+                    String path = mExternalStoragePaths[0];
+
+                    // For Kitkat we know this will fail but check anyway.
+                    int volumeId = FileUtils.getFatVolumeId(path);
+                    //if (LOCAL_LOGV)
+                        Log.d(TAG, path + " volume ID: " + volumeId);
+
+                    if (volumeId == -1) {
+                        // HACK: build the real mount point (NOTE: /mnt/media_rw must be 770)
+                        String realPath = "/mnt/media_rw/" + path.substring(path.lastIndexOf('/')+1);
+                        volumeId = FileUtils.getFatVolumeId(realPath);
+                        Log.d(TAG, realPath + " volume ID: " + volumeId);
+                    }
 
                     // Must check for failure!
                     // If the volume is not (yet) mounted, this will create a new
